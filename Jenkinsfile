@@ -1,35 +1,41 @@
 pipeline {
     agent any
-    
+
     environment {
-         IMAGE_NAME = 'ayaacvia/gireact-native-redux-calculator'
-        REGISTRY = 'index.docker.io/v1'
-        REGISTRY_CREDENTIALS = 'dockerhub-credentials' 
+        IMAGENAME = 'ayaacvia/react-native-calculator'
+        REGISTRY = 'https://index.docker.io/v1/'
+        REGISTRYCREDENTIALS = 'dockerhub-credentials'
     }
-    
+
     stages {
         stage('Checkout') {
             steps {
                 checkout scm
             }
         }
-
         stage('Build Docker Image') {
             steps {
                 script {
-                    dockerImage = docker.build("$IMAGE_NAME")
+                    docker.build("${IMAGENAME}:${env.BUILD_NUMBER}")
                 }
             }
         }
-        
         stage('Push Docker Image') {
             steps {
                 script {
-                    docker.withRegistry("https://$REGISTRY", "$REGISTRY_CREDENTIALS") {
-                        dockerImage.push()
+                    docker.withRegistry("${REGISTRY}", "${REGISTRYCREDENTIALS}") {
+                        def tag = "${IMAGENAME}:${env.BUILD_NUMBER}"
+                        docker.image(tag).push()
+                        docker.image(tag).push('latest')
                     }
                 }
             }
+        }
+    }
+
+    post {
+        always {
+            echo 'Pipeline finished'
         }
     }
 }

@@ -1,20 +1,23 @@
-# Gunakan image Node.js resmi
-FROM node:18
+FROM node:18-alpine AS builder
 
-# Set working directory dalam container
 WORKDIR /app
 
-# Copy package.json dan yarn.lock (jika ada) ke working directory
-COPY package.json yarn.lock* ./
+RUN npm install -g expo-cli
 
-# Install dependencies
-RUN yarn install --frozen-lockfile || npm install
+COPY package*.json ./
 
-# Copy seluruh kode aplikasi ke working directory
+RUN npm install
+
+RUN npx expo install react-native-web@~0.19.6 react-dom@18.2.0 @expo/webpack-config@^19.0.0
+
 COPY . .
 
-# Expose port untuk Metro bundler React Native (default 8081)
-EXPOSE 8081
+RUN npx expo export:web
 
-# Jalankan Metro bundler React Native
-CMD ["npx", "react-native", "start", "--host", "0.0.0.0"]
+FROM nginx:alpine
+
+COPY --from=builder /app/web-build /usr/share/nginx/html
+
+EXPOSE 80
+
+CMD ["nginx", "-g", "daemon off;"]
